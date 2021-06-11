@@ -9,7 +9,7 @@ import networkx as nx
 import random
 from tqdm import tqdm, trange
 
-data_path = ''
+data_path = '../'
 
 """
 Imports
@@ -62,9 +62,9 @@ for i in trange(len(pruning_files),desc="Running Descriptive Collector"):
     
 
 
-    for i in trange(len(list(G.nodes())), desc="Running for File" ):
-        position = list(G.nodes())[i]
-        for j in range(len(list(G.nodes()))):
+    for k in trange((30), desc="Running for File" ):
+        position = list(G.nodes())[k]
+        for j in trange((30), desc="Running for Position"):
             destination = list(G.nodes())[j]
             try:
                 init_dist = nx.dijkstra_path_length(G, position, destination, weight='distance')
@@ -85,7 +85,7 @@ for i in trange(len(pruning_files),desc="Running Descriptive Collector"):
             except :
                 fail += 1
                 counter += 1
-    result = [pruning_names[i], counter, success, distance_diff, same_distance, fail ]
+    result = [pruning_names[i], counter, success, distance_diff, same_distance, fail, connect, changed_connect]
     results.append(result)
 
 with open('Pruning_Stats.csv', 'w') as f: 
