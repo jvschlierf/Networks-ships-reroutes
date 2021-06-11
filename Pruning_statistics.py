@@ -2,7 +2,8 @@ import time, enum, math
 import numpy as np
 import pandas as pd
 import pylab as plt
-
+import csv
+from networkx.algorithms.approximation.connectivity import node_connectivity
 from networkx.algorithms.shortest_paths.generic import has_path
 import networkx as nx
 import random
@@ -46,7 +47,7 @@ def Cut_Graph(G, route_blockages):
 """
 Running Descriptive Collector
 """
-results = [["File", "Counter", "Success", "Distance Difference", "Same Distance", "Fail"]]
+results = [["File", "Counter", "Success", "Distance Difference", "Same Distance", "Fail", "Note Connectivity Unchanged", "Node Connectivity Changed"]]
 for i in trange(len(pruning_files),desc="Running Descriptive Collector"):
     file = pruning_files[i]
     G_changed = Cut_Graph(G, file)
@@ -56,6 +57,9 @@ for i in trange(len(pruning_files),desc="Running Descriptive Collector"):
     fail = 0
     same_distance = 0
     counter = 0
+    connect = 0
+    changed_connect = 0
+    
 
 
     for i in trange(len(list(G.nodes())), desc="Running for File" ):
@@ -64,17 +68,28 @@ for i in trange(len(pruning_files),desc="Running Descriptive Collector"):
             destination = list(G.nodes())[j]
             try:
                 init_dist = nx.dijkstra_path_length(G, position, destination, weight='distance')
+
                 changed_dist = nx.dijkstra_path_length(G_changed, position, destination, weight='distance')
                 if init_dist != changed_dist:
                     
                     distance_diff += changed_dist - init_dist
                     success += 1
                     counter += 1
+                    connect += node_connectivity(G, s=position, t=destination)
+                    changed_connect += node_connectivity(G_changed, s=position, t=destination)
                 else:
                     same_distance += 1
                     counter += 1
+                    connect += node_connectivity(G, s=position, t=destination)
+                    changed_connect += node_connectivity(G_changed, s=position, t=destination)
             except :
                 fail += 1
                 counter += 1
     result = [pruning_names[i], counter, success, distance_diff, same_distance, fail ]
     results.append(result)
+
+with open('Pruning_Stats.csv', 'w') as f: 
+    # using csv.writer method from CSV package
+    write = csv.writer(f)
+    write.writerows(results)
+
