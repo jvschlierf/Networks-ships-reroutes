@@ -85,7 +85,7 @@ class ShippingNetwork(Model):
         #create agents 
         Ships = []
        
-        for i in tqdm(range(self.num_ships), desc="Placing Ships"):
+        for i in range(self.num_ships):
         
             a = Ship(i+1, self, self.G, self.major_ports,  self.s, self.f, self.x)
             self.schedule.add(a)
@@ -546,13 +546,13 @@ Model Instantiation & Output
 
 
 #Multiple runs using Batchrunner
-fixed_params = {"distances": distances, "major_ports":origin, "pruning_files": pruning_files, "S": 200}
+fixed_params = {"distances": distances, "major_ports":origin, "pruning_files": pruning_files, "S": 100}
 variable_params = {"f": range(0, 20, 5), "x": np.arange(0, 3, 0.5), "pruning_schedule": pruning_schedule }
 
 batch_run = BatchRunner(ShippingNetwork,
                         variable_parameters=variable_params,
                         fixed_parameters=fixed_params,
-                        iterations=1,
+                        iterations=3,
                         max_steps=100,
                         )
 batch_run.run_all()
