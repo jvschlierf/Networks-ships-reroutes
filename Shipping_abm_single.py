@@ -377,27 +377,27 @@ class Ship(Agent):
                 except nx.NetworkXNoPath:
                     self.not_reachable += 1 #global counter for Networx error
                     not_reached += 1 #local counter
-                    print(not_reached)
+                    # print(not_reached)
 
         except ValueError: #handle list end
-            print("list end")
+            # print("list end")
             pass
 
         if not_reached == len(ports): #if no routes possible routes found, reassign destination
-            print("reassign destination")
+            # print("reassign destination")
             self.origin_failed += 1
             self.destination = self.dest()
             self.ports =  [*self.start_port, *self.destination]
             if self.origin_failed > 1: #if the problem persists, the ship is stuck
-                print("second origin failure, change origin")
+                # print("second origin failure, change origin")
                 self.stuck += 1
                 self.start_port = self.origin()
                 return self.routing() #Recursion go BRRR
             else:
-                print("First origin failure")
+                # print("First origin failure")
                 return self.routing() #recursion brrrrr
         else:
-            print("success")   
+            # print("success")   
             flat_route = []
             for sublist in itinerary: #flatten the itinerary
                 for port in sublist:
@@ -508,7 +508,7 @@ Model Instantiation & Output
 pruning_schedule_single = ["Suez"]
 
 #Single Run
-model = ShippingNetwork(distances, origin, pruning_files, pruning_schedule_single, S=20)
+model = ShippingNetwork(distances, origin, pruning_files, pruning_schedule_single, S=200, f=3, x=0.5)
 
 steps = 100
 for i in trange(steps):
