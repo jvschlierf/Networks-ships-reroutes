@@ -43,8 +43,8 @@ route_blockage_total = pd.read_csv((data_path + 'route_blockages_total.csv'))
 pruning_files = [route_blockage_dov, route_blockage_gib, route_blockage_horm, route_blockage_mal, route_blockage_pan, route_blockage_suez, route_blockage_total]
 
 #Our Schedule (run over 90 days ~ 3 months, we are interested in the behavior shortly before and after the network changes) is the 
-pruning_schedule = [{30:"Dover", 45:"Open"}, {30:"Gibraltar", 45:"Open"}, {30:"Hormuz", 45:"Open"}, {30:"Malacca", 45:"Open"}, {30:"Panama", 45:"Open"}, {30:"Suez", 45:"Open"}, {30:"Total", 45:"Open"}]
-
+# pruning_schedule = [{30:"Dover", 45:"Open"}, {30:"Gibraltar", 45:"Open"}, {30:"Hormuz", 45:"Open"}, {30:"Malacca", 45:"Open"}, {30:"Panama", 45:"Open"}, {30:"Suez", 45:"Open"}, {30:"Total", 45:"Open"}]
+pruning_schedule = ["Dover", "Gibraltar", "Hormuz", "Malacca", "Panama", "Suez", "Total"]
 pruning_schedule_single = {30:"Dover", 45:"Open"}
 
 
@@ -153,14 +153,18 @@ class ShippingNetwork(Model):
         for a in tqdm(self.Ships):
                 a.G = G_new
 
-    def network_check(self):
-        try:
-            self.network_change(self.pruning_schedule[self.stp_cnt])
-        except:
-            pass
+    # def network_check(self):
+    #     try:
+    #         self.network_change(self.pruning_schedule[self.stp_cnt])
+    #     except:
+    #         pass
 
     def step(self):
-        self.network_check()    #Check if it is time to change the network as per the schedule
+        if self.stp_cnt == 30:
+            self.network_change(self.pruning_schedule)
+        elif self.stp_cnt == 60:
+            self.network_change("Open")
+        # self.network_check()    #Check if it is time to change the network as per the schedule
         self.schedule.step()    #Run each Agents
         self.datacollector.collect(self)
         self.stp_cnt += 1
@@ -303,6 +307,27 @@ class Ship(Agent):
             except ValueError: #handle list end
                 pass
 
+        try:    
+            for j in range(len(ports)):
+                distance = dict()
+                try:
+                    for i in range(1,len(ports)): #look for the closest port
+                        distance[ports[i]] = nx.shortest_path_length(self.G, ports[0] , ports[i], weight='distance')
+                        next_stop = min(distance, key=distance.get)
+                        itinerary.append(nx.shortest_path(self.G, ports[0], next_stop, weight = 'distance')[1:]) #add the route to the closest port to the itinerary
+                        overall_distance.append(distance.get(next_stop)) #add distance to the closest port
+                        ports.pop(0)
+                        ind = ports.index(next_stop)
+                        ports.pop(ind)
+                        ports.insert(0, next_stop)
+
+                except nx.NetworkXNoPath:
+                    self.not_reachable += 1 #global counter for Networx error
+                    not_reached += 1 #local counter
+
+        except ValueError: #handle list end
+                pass
+
         if not_reached == len(ports): #if no routes possible routes found, reassign destination
             self.origin_failed += 1
             self.destination = self.dest()
@@ -374,7 +399,7 @@ class Ship(Agent):
                         self.itinerary.append(self.position)
                         self.steps += 1 
             
-                # THIS CURRENTLY ONLY CHANGES THE ROUTE IF THE NEXT STEP IS BLOCKED
+                    # Compare the distances
                     elif new_distance > self.current_dist: #if current route is shorter than newly calculated route, check for obstructions
                         
                         if self.foresight >= (self.current_dist // self.speed): #check how many steps are you from your final destination. If you are far away, do nothing and remain on course
@@ -417,34 +442,35 @@ class Ship(Agent):
 
 
 """
-Model Instantiation
+Model Instantiation & Output
 """
+
 #Single Run
-model = ShippingNetwork(distances, origin, pruning_files, pruning_schedule, 1)
-
-steps = 20
-for i in trange(steps):
-    model.step()
+# model = ShippingNetwork(distances, origin, pruning_files, pruning_schedule_single, 100)
 
 
-agent_state = model.datacollector.get_agent_vars_dataframe()
+# for i in trange(steps):
+#     model.step()
 
 
-#write output of single run to file
-agent_state.to_csv((data_path + 'single_run_output.csv'), header = True)
+# agent_state = model.datacollector.get_agent_vars_dataframe()
+
+
+# #write output of single run to file
+# agent_state.to_csv((data_path + 'single_run_output.csv'), header = True)
 
 
 
 #Multiple runs using Batchrunner
-fixed_params = {"distances": distances, "major_ports":origin, "pruning_files": pruning_files, "pruning_schedule": pruning_schedule, "S": 5}
-variable_params = {"f": range(0, 20, 5), "x": np.arange(-0.75, 1.25, 0.25)}
+fixed_params = {"distances": distances, "major_ports":origin, "pruning_files": pruning_files, "S": 5}
+variable_params = {"f": range(0, 20, 5), "x": np.arange(-0.75, 1.25, 0.25), "pruning_schedule": pruning_schedule }
 
 batch_run = BatchRunnerMP(ShippingNetwork,
                         nr_processes=5,
                         variable_prams = variable_params,
                         fixed_params = fixed_params,
-                        iterations=1,
-                        max_steps=20,
+                        iterations=3,
+                        max_steps=90,
                         )
 batch_run.run_all()
 
@@ -454,9 +480,7 @@ keys = data_collector_agents.keys()
 
 
 
-"""
-Output
-"""
+
 
 
 
