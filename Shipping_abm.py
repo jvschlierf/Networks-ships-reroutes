@@ -492,8 +492,8 @@ with open((data_path + 'batch_out.pickle'), 'wb') as handle:
 
 with open(( data_path + 'batch_keys.csv'), 'w') as csv_file:  
     writer = csv.writer(csv_file)
-    for a, b, c in list(keys):
-       writer.writerow([a, b, c])
+    for a, b, c, d in list(keys):
+       writer.writerow([a, b, c, d])    
 
 
 
