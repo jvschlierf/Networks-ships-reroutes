@@ -9,7 +9,7 @@ from mesa import Agent, Model
 from mesa.time import SimultaneousActivation, RandomActivation
 from mesa.space import NetworkGrid
 from mesa.datacollection import DataCollector
-from mesa.batchrunner import BatchRunnerMP
+from mesa.batchrunner import BatchRunner
 from networkx.algorithms.shortest_paths.generic import has_path
 import networkx as nx
 import random
@@ -18,6 +18,7 @@ import csv
 from tqdm import tqdm, trange
 from time import sleep
 
+# data_path = '../'
 data_path = 'Data/' #set to wherever the data files are, will be used on every input
 
 
@@ -377,27 +378,27 @@ class Ship(Agent):
                 except nx.NetworkXNoPath:
                     self.not_reachable += 1 #global counter for Networx error
                     not_reached += 1 #local counter
-                    print(not_reached)
+                    # print(not_reached)
 
         except ValueError: #handle list end
-            print("list end")
+            # print("list end")
             pass
 
         if not_reached == len(ports): #if no routes possible routes found, reassign destination
-            print("reassign destination")
+            # print("reassign destination")
             self.origin_failed += 1
             self.destination = self.dest()
             self.ports =  [*self.start_port, *self.destination]
             if self.origin_failed > 1: #if the problem persists, the ship is stuck
-                print("second origin failure, change origin")
+                # print("second origin failure, change origin")
                 self.stuck += 1
                 self.start_port = self.origin()
                 return self.routing() #Recursion go BRRR
             else:
-                print("First origin failure")
+                # print("First origin failure")
                 return self.routing() #recursion brrrrr
         else:
-            print("success")   
+            # print("success")   
             flat_route = []
             for sublist in itinerary: #flatten the itinerary
                 for port in sublist:
@@ -505,27 +506,27 @@ class Ship(Agent):
 """
 Model Instantiation & Output
 """
-pruning_schedule_single = ["Suez"]
+# pruning_schedule_single = ["Suez"]
 
-#Single Run
-model = ShippingNetwork(distances, origin, pruning_files, pruning_schedule_single, S=20)
+# #Single Run
+# model = ShippingNetwork(distances, origin, pruning_files, pruning_schedule_single, S=20)
 
-steps = 100
-for i in trange(steps):
-    model.step()
-
-
-agent_state = model.datacollector.get_agent_vars_dataframe()
+# steps = 100
+# for i in trange(steps):
+#     model.step()
 
 
-#write output of single run to file
-agent_state.to_csv((data_path + 'single_run_output.csv'), header = True)
+# agent_state = model.datacollector.get_agent_vars_dataframe()
+
+
+# #write output of single run to file
+# agent_state.to_csv((data_path + 'single_run_output.csv'), header = True)
 
 
 
 # #Multiple runs using Batchrunner
-# fixed_params = {"distances": distances, "major_ports":origin, "pruning_files": pruning_files, "S": 5}
-# variable_params = {"f": range(0, 20, 5), "x": np.arange(-0.75, 1.25, 0.25), "pruning_schedule": pruning_schedule }
+# fixed_params = {"distances": distances, "major_ports":origin, "pruning_files": pruning_files, "S": 200}
+# variable_params = {"f": range(0, 20, 5), "x": np.arange(0, 3, 0.5), "pruning_schedule": pruning_schedule }
 
 # batch_run = BatchRunnerMP(ShippingNetwork,
 #                         nr_processes=5,
@@ -544,13 +545,29 @@ agent_state.to_csv((data_path + 'single_run_output.csv'), header = True)
 
 
 
+#Multiple runs using Batchrunner
+fixed_params = {"distances": distances, "major_ports":origin, "pruning_files": pruning_files, "S": 200}
+variable_params = {"f": range(0, 20, 5), "x": np.arange(0, 3, 0.5), "pruning_schedule": pruning_schedule }
+
+batch_run = BatchRunner(ShippingNetwork,
+                        variable_parameters=variable_params,
+                        fixed_parameters=fixed_params,
+                        iterations=1,
+                        max_steps=100,
+                        )
+batch_run.run_all()
+
+
+data_collector_agents = batch_run.get_collector_agents()
+keys = data_collector_agents.keys()
+
 
 
 
 
 # write output of batch runner to file
-# with open((data_path + 'batch_out.pickle'), 'wb') as handle:
-#     pickle.dump(data_collector_agents, handle, protocol=pickle.HIGHEST_PROTOCOL)
+with open((data_path + 'batch_out.pickle'), 'wb') as handle:
+    pickle.dump(data_collector_agents, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # with open(( data_path + 'batch_keys.csv'), 'w') as csv_file:  
 #     writer = csv.writer(csv_file)
