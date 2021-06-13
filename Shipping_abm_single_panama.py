@@ -82,7 +82,7 @@ class ShippingNetwork(Model):
 
 
         #create agents 
-        Ships = []
+        self.Ships = []
        
         for i in tqdm(range(self.num_ships), desc="Placing Ships"):
         
@@ -410,17 +410,19 @@ class Ship(Agent):
         self.step_size = self.ident_distance() #look up the distance between two cities 
         self.state = self.step_size / self.speed #change state to step amount
         self.current_dist = self.current_dist - self.step_size #adjust current distance minus the distance traveled in the next step
-        self.model.grid.move_agent(self, self.next_position) #move the agent
-        self.position = self.next_position
-        if self.position in self.destination:
-            self.destination.pop(self.destination.index(self.position))
-        
-        self.current_route.pop(0) #remove the next step from the itinerary
-        # self.position = self.next_position
-        if len(self.current_route) == 1:
-            self.next_position = self.current_route[0] 
+        if nx.has_path(self.G, self.position, self.next_position):
+            self.model.grid.move_agent(self, self.next_position) #move the agent
+            self.position = self.next_position
+            if self.position in self.destination:
+                self.destination.pop(self.destination.index(self.position))
+            self.current_route.pop(0) #remove the next step from the itinerary
+            # self.position = self.next_position
+            if len(self.current_route) == 1:
+                self.next_position = self.current_route[0] 
+            else:
+                self.next_position = self.current_route[1] #update current route
         else:
-            self.next_position = self.current_route[1] #update current route
+            self.stuck += 1
 
 
     def ident_distance(self): #look up the distance of the current step
@@ -471,6 +473,7 @@ class Ship(Agent):
                             self.move()
                             self.itinerary.append(self.position)
                             self.steps +=1
+
                         else:
                             self.move()
                             self.itinerary.append(self.position)
