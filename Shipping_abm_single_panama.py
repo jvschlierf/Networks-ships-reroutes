@@ -89,7 +89,7 @@ class ShippingNetwork(Model):
             a = Ship(i+1, self, self.G, self.major_ports,  self.s, self.f, self.x)
             self.schedule.add(a)
             #append to list of ships
-            Ships.append(a)
+            self.Ships.append(a)
         
             #place agent on origin node
             self.grid.place_agent(a, a.start)
