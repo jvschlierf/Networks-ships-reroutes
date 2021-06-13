@@ -506,7 +506,7 @@ class Ship(Agent):
 """
 Model Instantiation & Output
 """
-# pruning_schedule_single = ["Suez"]
+pruning_schedule_single = "Suez"
 
 # #Single Run
 # model = ShippingNetwork(distances, origin, pruning_files, pruning_schedule_single, S=20)
@@ -546,8 +546,8 @@ Model Instantiation & Output
 
 
 #Multiple runs using Batchrunner
-fixed_params = {"distances": distances, "major_ports":origin, "pruning_files": pruning_files, "S": 100}
-variable_params = {"f": range(0, 20, 5), "x": np.arange(0, 3, 0.5), "pruning_schedule": pruning_schedule }
+fixed_params = {"distances": distances, "major_ports":origin, "pruning_files": pruning_files, "S": 100, "pruning_schedule": pruning_schedule_single, "x":1.5}
+variable_params = {"f": range(0, 20, 5) }
 
 batch_run = BatchRunner(ShippingNetwork,
                         variable_parameters=variable_params,

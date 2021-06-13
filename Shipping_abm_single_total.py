@@ -142,7 +142,6 @@ class ShippingNetwork(Model):
             G_new = self.G_Pan
         elif blockage == "Suez":
             G_new = self.G_Suez
-            print("Suez")
         elif blockage == "Total":
             G_new = self.G_Total
         elif blockage == "Open":
@@ -506,7 +505,7 @@ class Ship(Agent):
 """
 Model Instantiation & Output
 """
-pruning_schedule_single = "Suez"
+pruning_schedule_single = "Total"
 
 #Single Run
 model = ShippingNetwork(distances, origin, pruning_files, pruning_schedule_single, S=500, f=3, x=1.5)
@@ -520,7 +519,7 @@ agent_state = model.datacollector.get_agent_vars_dataframe()
 
 
 #write output of single run to file
-agent_state.to_csv((data_path + 'single_run_output.csv'), header = True)
+agent_state.to_csv((data_path + pruning_schedule_single + "_" + 'single_run_output.csv'), header = True)
 
 
 
